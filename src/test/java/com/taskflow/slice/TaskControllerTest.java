@@ -21,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -175,6 +176,25 @@ class TaskControllerTest {
         mockMvc.perform(delete("/tasks/999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    void getTasksOverdue_retorna200YListaEnOrden() throws Exception {
+        LocalDate hoy = LocalDate.now();
+        Task t1;
+        Task t2;
+        try {
+            t1 = new Task(7L, "Corregir bug de fechas", "desc", TaskStatus.IN_PROGRESS, Priority.MED, 1L, 1L, hoy.minusDays(1));
+            t2 = new Task(5L, "Otra atrasada", "desc", TaskStatus.IN_PROGRESS, Priority.MED, 1L, 1L, hoy.minusDays(2));
+        } catch (TaskValidationException e) {
+            throw new IllegalStateException("dato de prueba inválido", e);
+        }
+        when(taskService.vencidas()).thenReturn(List.of(t2, t1));
+
+        mockMvc.perform(get("/tasks/overdue"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].title").value("Otra atrasada"));
     }
 
     // ---- helpers de datos (reales, no mocks) ----

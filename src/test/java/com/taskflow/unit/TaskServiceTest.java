@@ -17,6 +17,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -127,6 +129,27 @@ class TaskServiceTest {
                     () -> service.cambiarStatus(2L, TaskStatus.DONE));
             // El never() es el assert más valioso del bloque: la regla PROHIBIÓ persistir.
             verify(repository, never()).save(any(Task.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("vencidas")
+    class Vencidas {
+
+        @Test
+        void vencidas_devuelveSoloVencidasYOrdenadas() throws Exception {
+            LocalDate hoy = LocalDate.now();
+            Task vencidaAntigua = new Task(7L, "Antigua", "d", TaskStatus.IN_PROGRESS, Priority.MED, PROYECTO, 1L, hoy.minusDays(2));
+            Task vencidaReciente = new Task(9L, "Reciente", "d", TaskStatus.IN_PROGRESS, Priority.MED, PROYECTO, 1L, hoy.minusDays(1));
+            Task hecha = new Task(8L, "Hecha", "d", TaskStatus.DONE, Priority.MED, PROYECTO, 1L, hoy.minusDays(3));
+            Task sinFecha = new Task(10L, "SinFecha", "d", TaskStatus.IN_PROGRESS, Priority.MED, PROYECTO, 1L, null);
+            when(repository.findAll()).thenReturn(List.of(vencidaReciente, sinFecha, hecha, vencidaAntigua));
+
+            List<Task> resultado = service.vencidas();
+
+            assertEquals(2, resultado.size());
+            assertEquals(7L, resultado.get(0).getId());
+            assertEquals(9L, resultado.get(1).getId());
         }
     }
 
