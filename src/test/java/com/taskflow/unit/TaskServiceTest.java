@@ -154,6 +154,39 @@ class TaskServiceTest {
     }
 
     @Nested
+    @DisplayName("SinResponsable")
+    class SinResponsable {
+
+        @Test
+        void sinResponsable_filtraYOrdenaCorrectamente() {
+            LocalDate hoy = LocalDate.now();
+            try {
+                Task sinResp10 = new Task(11L, "SinResp10", "d", TaskStatus.TODO, Priority.MED, PROYECTO, null, hoy.plusDays(10));
+                Task conResp = new Task(12L, "ConResp", "d", TaskStatus.TODO, Priority.MED, PROYECTO, 3L, hoy.plusDays(5));
+                Task sinRespSinFecha = new Task(13L, "SinFecha", "d", TaskStatus.TODO, Priority.MED, PROYECTO, null, null);
+                Task sinResp2 = new Task(14L, "SinResp2", "d", TaskStatus.TODO, Priority.MED, PROYECTO, null, hoy.plusDays(2));
+                when(repository.findAll()).thenReturn(List.of(sinResp10, conResp, sinRespSinFecha, sinResp2));
+
+                List<Task> resultado = service.sinResponsable();
+                List<Long> ids = resultado.stream().map(Task::getId).toList();
+                assertEquals(List.of(14L, 11L, 13L), ids);
+            } catch (TaskValidationException e) {
+                throw new IllegalStateException("dato de prueba inválido", e);
+            }
+        }
+
+        @Test
+        void sinResponsable_cuandoNoHayDevuelveListaVacia() {
+            Task t1 = tarea(21L, "ConAsig1", 5L);
+            Task t2 = tarea(22L, "ConAsig2", 6L);
+            when(repository.findAll()).thenReturn(List.of(t1, t2));
+
+            List<Task> resultado = service.sinResponsable();
+            assertEquals(0, resultado.size());
+        }
+    }
+
+    @Nested
     @DisplayName("eliminar")
     class Eliminar {
 
