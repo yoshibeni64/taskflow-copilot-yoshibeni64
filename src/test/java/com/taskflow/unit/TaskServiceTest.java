@@ -17,6 +17,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -127,6 +129,60 @@ class TaskServiceTest {
                     () -> service.cambiarStatus(2L, TaskStatus.DONE));
             // El never() es el assert más valioso del bloque: la regla PROHIBIÓ persistir.
             verify(repository, never()).save(any(Task.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("vencidas")
+    class Vencidas {
+
+        @Test
+        void vencidas_devuelveSoloVencidasYOrdenadas() throws Exception {
+            LocalDate hoy = LocalDate.now();
+            Task vencidaAntigua = new Task(7L, "Antigua", "d", TaskStatus.IN_PROGRESS, Priority.MED, PROYECTO, 1L, hoy.minusDays(2));
+            Task vencidaReciente = new Task(9L, "Reciente", "d", TaskStatus.IN_PROGRESS, Priority.MED, PROYECTO, 1L, hoy.minusDays(1));
+            Task hecha = new Task(8L, "Hecha", "d", TaskStatus.DONE, Priority.MED, PROYECTO, 1L, hoy.minusDays(3));
+            Task sinFecha = new Task(10L, "SinFecha", "d", TaskStatus.IN_PROGRESS, Priority.MED, PROYECTO, 1L, null);
+            when(repository.findAll()).thenReturn(List.of(vencidaReciente, sinFecha, hecha, vencidaAntigua));
+
+            List<Task> resultado = service.vencidas();
+
+            assertEquals(2, resultado.size());
+            assertEquals(7L, resultado.get(0).getId());
+            assertEquals(9L, resultado.get(1).getId());
+        }
+    }
+
+    @Nested
+    @DisplayName("SinResponsable")
+    class SinResponsable {
+
+        @Test
+        void sinResponsable_filtraYOrdenaCorrectamente() {
+            LocalDate hoy = LocalDate.now();
+            try {
+                Task sinResp10 = new Task(11L, "SinResp10", "d", TaskStatus.TODO, Priority.MED, PROYECTO, null, hoy.plusDays(10));
+                Task conResp = new Task(12L, "ConResp", "d", TaskStatus.TODO, Priority.MED, PROYECTO, 3L, hoy.plusDays(5));
+                Task sinRespSinFecha = new Task(13L, "SinFecha", "d", TaskStatus.TODO, Priority.MED, PROYECTO, null, null);
+                Task sinResp2 = new Task(14L, "SinResp2", "d", TaskStatus.TODO, Priority.MED, PROYECTO, null, hoy.plusDays(2));
+                when(repository.findAll()).thenReturn(List.of(sinResp10, conResp, sinRespSinFecha, sinResp2));
+
+                List<Task> resultado = service.sinResponsable();
+                List<Long> ids = resultado.stream().map(Task::getId).toList();
+                assertEquals(List.of(14L, 11L, 13L), ids);
+            } catch (TaskValidationException e) {
+                throw new IllegalStateException("dato de prueba inválido", e);
+            }
+        }
+
+        @Test
+        void sinResponsable_cuandoNoHayDevuelveListaVacia() {
+            Task t1 = tarea(21L, "ConAsig1", 5L);
+            Task t2 = tarea(22L, "ConAsig2", 6L);
+            when(repository.findAll()).thenReturn(List.of(t1, t2));
+
+            List<Task> resultado = service.sinResponsable();
+            assertEquals(0, resultado.size());
         }
     }
 

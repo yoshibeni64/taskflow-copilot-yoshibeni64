@@ -122,4 +122,26 @@ public class TaskService {
                 .filter(t -> t.getPriority() == priority)
                 .toList();
     }
+
+    /**
+     * Devuelve las tareas vencidas según la regla del dominio: delega en Task.estaVencida()
+     * y ordena por fecha ascendente (las sin fecha al final) usando TaskOrders.POR_FECHA.
+     */
+    public List<Task> vencidas() {
+        return repository.findAll().stream()
+                .filter(Task::estaVencida)
+                .sorted(TaskOrders.POR_FECHA)
+                .toList();
+    }
+
+    /**
+     * Devuelve las tareas sin responsable (assigneeId == null). Reusa el predicado ReportService.SIN_ASIGNAR
+     * y ordena por fecha ascendente con las sin fecha al final (TaskOrders.POR_FECHA).
+     */
+    public List<Task> sinResponsable() {
+        return repository.findAll().stream()
+                .filter(ReportService.SIN_ASIGNAR)
+                .sorted(TaskOrders.POR_FECHA)
+                .toList();
+    }
 }
