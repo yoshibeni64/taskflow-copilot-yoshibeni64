@@ -72,18 +72,17 @@ public class TaskController {
         return tareas.stream().map(TaskMapper::aResponse).toList();
     }
 
-    /**
-     * GET /tasks/overdue — lista tareas vencidas de todos los proyectos.
-     */
+    /** GET /tasks/overdue — tareas vencidas de todos los proyectos, la más vencida primero. */
     @Operation(summary = "Lista tareas vencidas",
-            description = "Devuelve las tareas cuya fecha pasó y no están DONE.")
+            description = "Tareas con fecha pasada que no están DONE (Task.estaVencida()), por dueDate ascendente.")
     @GetMapping("/tasks/overdue")
     public List<TaskResponse> getOverdueTasks() {
         return taskService.vencidas().stream().map(TaskMapper::aResponse).toList();
     }
 
+    /** GET /tasks/unassigned — tareas sin responsable, por dueDate ascendente y sin fecha al final. */
     @Operation(summary = "Lista tareas sin responsable",
-            description = "Devuelve las tareas cuya assigneeId es null de todos los proyectos.")
+            description = "Tareas con assigneeId null en cualquier estado, por dueDate ascendente; las sin fecha al final.")
     @GetMapping("/tasks/unassigned")
     public List<TaskResponse> getUnassignedTasks() {
         return taskService.sinResponsable().stream().map(TaskMapper::aResponse).toList();

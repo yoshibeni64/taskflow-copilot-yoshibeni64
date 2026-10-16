@@ -111,21 +111,9 @@ public class TaskService {
                 .toList();
     }
 
-    /** Busca una tarea por id: delega en el repositorio y deja subir el Optional TAL CUAL. */
-    public Optional<Task> buscarPorId(Long id) {
-        return repository.findById(id);
-    }
-
-    /** Filtro por prioridad (?priority=): MISMO patrón que porEstado. */
-    public List<Task> porPrioridad(Priority priority) {
-        return repository.findAll().stream()
-                .filter(t -> t.getPriority() == priority)
-                .toList();
-    }
-
     /**
-     * Devuelve las tareas vencidas según la regla del dominio: delega en Task.estaVencida()
-     * y ordena por fecha ascendente (las sin fecha al final) usando TaskOrders.POR_FECHA.
+     * Tareas vencidas de todos los proyectos (GET /tasks/overdue). La regla es la del
+     * dominio, Task.estaVencida(); el orden, TaskOrders.POR_FECHA: la más vencida primero.
      */
     public List<Task> vencidas() {
         return repository.findAll().stream()
@@ -135,13 +123,26 @@ public class TaskService {
     }
 
     /**
-     * Devuelve las tareas sin responsable (assigneeId == null). Reusa el predicado ReportService.SIN_ASIGNAR
-     * y ordena por fecha ascendente con las sin fecha al final (TaskOrders.POR_FECHA).
+     * Tareas sin responsable de todos los proyectos, en cualquier estado (GET /tasks/unassigned).
+     * La regla es ReportService.SIN_ASIGNAR; el orden, TaskOrders.POR_FECHA: por fecha ascendente y las
+     * que no tienen fecha al final.
      */
     public List<Task> sinResponsable() {
         return repository.findAll().stream()
                 .filter(ReportService.SIN_ASIGNAR)
                 .sorted(TaskOrders.POR_FECHA)
+                .toList();
+    }
+
+    /** Busca una tarea por id: delega en el repositorio y deja subir el Optional TAL CUAL. */
+    public Optional<Task> buscarPorId(Long id) {
+        return repository.findById(id);
+    }
+
+    /** Filtro por prioridad (?priority=): MISMO patrón que porEstado. */
+    public List<Task> porPrioridad(Priority priority) {
+        return repository.findAll().stream()
+                .filter(t -> t.getPriority() == priority)
                 .toList();
     }
 }

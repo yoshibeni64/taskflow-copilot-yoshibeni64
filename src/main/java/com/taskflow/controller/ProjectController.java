@@ -4,6 +4,7 @@ import com.taskflow.dto.ProjectRequest;
 import com.taskflow.dto.ProjectResponse;
 import com.taskflow.dto.TaskResponse;
 import com.taskflow.exception.ProjectNotFoundException;
+import com.taskflow.dto.ProjectSummaryResponse;
 import com.taskflow.mapper.ProjectMapper;
 import com.taskflow.mapper.TaskMapper;
 import com.taskflow.model.Project;
@@ -84,6 +85,19 @@ public class ProjectController {
             tareas = tareas.stream().filter(t -> t.getStatus() == status).toList();
         }
         return tareas.stream().map(TaskMapper::aResponse).toList();
+    }
+
+    /**
+     * GET /projects/{id}/summary — resumen del proyecto (conteos por estado y vencidas).
+     * 404 si el proyecto no existe; 200 con ProjectSummaryResponse en caso contrario.
+     */
+    @Operation(summary = "Resumen del proyecto",
+            description = "Devuelve conteos por estado (TODO, IN_PROGRESS, DONE) y número de tareas vencidas.")
+    @GetMapping("/projects/{id}/summary")
+    public ProjectSummaryResponse getResumen(@PathVariable("id") Long id) {
+        Project proyecto = projectService.buscarPorId(id)
+                .orElseThrow(() -> new ProjectNotFoundException(id));
+        return projectService.resumen(proyecto);
     }
 
     /**
