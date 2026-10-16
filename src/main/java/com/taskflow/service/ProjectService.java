@@ -4,26 +4,25 @@ import com.taskflow.dto.ProjectRequest;
 import com.taskflow.exception.ProjectNotFoundException;
 import com.taskflow.model.Project;
 import com.taskflow.model.Task;
+import com.taskflow.model.TaskStatus;
 import com.taskflow.model.User;
 import com.taskflow.repository.ProjectRepository;
 import com.taskflow.repository.TaskRepository;
 import com.taskflow.repository.UserRepository;
+import com.taskflow.dto.ProjectSummaryResponse;
+import com.taskflow.mapper.ProjectMapper;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
  * ProjectService — la capa de negocio del lado Project. Cero HTTP aquí (el "no existe" se traduce con
  * orElseThrow -> ProjectNotFoundException; el advice le pone el 404).
- *
- * Dos decisiones que se ven aquí:
- *   - Project guarda un ownerId (Long), no un objeto User, así que 'crear' y 'reemplazar' manejan
- *     ese Long. 'crear' construye con id null y la BD asigna el id (IDENTITY).
- *   - 'tareasDe' usa la derived query taskRepository.findByProjectId(id) en vez de filtrar findAll()
- *     con un stream: el filtro lo hace la BD.
  */
 @Service
 public class ProjectService {
@@ -98,5 +97,27 @@ public class ProjectService {
                 .orElseThrow(() -> new ProjectNotFoundException(id));
         tareasDe(id).forEach(t -> taskRepository.deleteById(t.getId()));   // cascada manual (la FK obliga el orden)
         projectRepository.deleteById(id);
+    }
+
+    /**
+     * Construye el resumen del proyecto: cuenta tareas por estado y calcula vencidas reutilizando
+     * Task.estaVencida(). El controlador decide el 404 y pasa la entidad Project encontrada.
+     */
+    public ProjectSummaryResponse resumen(Project project) {
+        List<Task> tasks = tareasDe(project.getId());
+        Map<String, Integer> byStatus = new HashMap<>();
+        for (TaskStatus s : TaskStatus.values()) {
+            byStatus.put(s.name(), 0);
+        }
+        int overdue = 0;
+        for (Task t : tasks) {
+            String key = t.getStatus().name();
+            byStatus.put(key, byStatus.getOrDefault(key, 0) + 1);
+            if (t.estaVencida()) {
+                overdue++;
+            }
+        }
+        int total = tasks.size();
+        return ProjectMapper.aSummary(project, byStatus, total, overdue);
     }
 }
