@@ -158,6 +158,8 @@ public class TaskController {
      *  - 404 si la tarea no existe (TaskNotFoundException via buscarPorId).
      *  - 422 si la regla de estado lo prohíbe (TaskStateException lanzada por el service).
      */
+    @Operation(summary = "Reasigna el responsable de una tarea",
+        description = "Cambia solo el responsable. Responde 400 si assigneeId falta, es null o no es positivo; 404 si la tarea no existe y 422 si está DONE.")
     @PatchMapping("/tasks/{id}/assignee")
     public TaskResponse patchAssignee(@PathVariable("id") Long id,
                                       @Valid @RequestBody com.taskflow.dto.TaskAssigneeUpdateRequest request) {
