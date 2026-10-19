@@ -145,4 +145,18 @@ public class TaskService {
                 .filter(t -> t.getPriority() == priority)
                 .toList();
     }
+
+    /**
+     * Reasigna el responsable de una tarea existente.
+     * Si la tarea ya está en DONE, la operación está prohibida y se lanza TaskStateException
+     * con el mensaje exactamente "No se puede reasignar una tarea terminada." tal como exige
+     * la especificación.
+     */
+    public Task reasignar(Task tarea, Long assigneeId) {
+        if (tarea.getStatus() == TaskStatus.DONE) {
+            throw new TaskStateException("No se puede reasignar una tarea terminada.");
+        }
+        tarea.setAssigneeId(assigneeId);
+        return repository.save(tarea);
+    }
 }
